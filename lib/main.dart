@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-import 'SelectHub.dart';
+import 'select_hub.dart';
 
 void main() {
   runApp(const MyApp());
@@ -43,18 +43,3 @@ class _MyHomePageState extends State<MyHomePage> {
     return SelectHub();
   }
 }
-
-/*
-  final characteristic = QualifiedCharacteristic(
-            serviceId: Uuid.parse("170e6a4c-af9e-4a1f-843e-e4fb5e165c62"),
-            characteristicId:
-                Uuid.parse("7eb1afe1-e0c6-4539-86a3-1b293ff80588"),
-            deviceId: "24:0A:C4:58:E0:D2");
-        final response =
-            await flutterReactiveBle.readCharacteristic(characteristic);
-        print("response=$response");
-        await flutterReactiveBle.writeCharacteristicWithResponse(characteristic,
-            value: "Hi Hi\x00".runes.map((e) => e).toList());
-        await flutterReactiveBle.deinitialize();
-        */
-

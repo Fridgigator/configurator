@@ -1,14 +1,16 @@
 import 'dart:typed_data';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:developer' as developer;
 
-import 'SelectWiFi.dart';
+import 'constants.dart';
+import 'select_wifi.dart';
 
 class SelectHub extends StatefulWidget {
+  const SelectHub({Key? key}) : super(key: key);
+
   @override
   State<StatefulWidget> createState() => _SelectHubState();
 }
@@ -18,6 +20,9 @@ class _SelectHubState extends State<SelectHub> {
   bool canRefresh = true;
   final flutterReactiveBle = FlutterReactiveBle();
   _SelectHubState() {
+    flutterReactiveBle.deinitialize();
+    flutterReactiveBle.initialize();
+
     getNewSearchData();
   }
   @override
@@ -42,10 +47,13 @@ class _SelectHubState extends State<SelectHub> {
                         BLEDeviceData: e,
                         onClick: () {
                           setState(() {
+                            flutterReactiveBle.deinitialize();
+
                             Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                    builder: (context) => new SelectWiFi()));
+                                    builder: (context) => SelectWiFi(
+                                        name: e.name, deviceID: e.id)));
                           });
                         })).toList())));
   }
@@ -54,9 +62,12 @@ class _SelectHubState extends State<SelectHub> {
     if (await Permission.location.request().isGranted) {
       List<BLEDevice> BLEDeviceList = [];
       yield* flutterReactiveBle.scanForDevices(
-        withServices: [Uuid.parse("170e6a4c-af9e-4a1f-843e-e4fb5e165c62")],
+        withServices: [Constants().ServiceUUID],
       ).map((event) => BLEDevice(
-          name: event.name, RSSI: event.rssi, device: event.manufacturerData));
+          name: event.name,
+          RSSI: event.rssi,
+          device: event.manufacturerData,
+          id: event.id));
     }
   }
 
@@ -75,7 +86,6 @@ class _SelectHubState extends State<SelectHub> {
       print("Can refresh");
     });
 
-    developer.log("refreshing", name: 'my.app.category');
     flutterReactiveBle.deinitialize();
     flutterReactiveBle.initialize();
     setState(() {
@@ -85,25 +95,20 @@ class _SelectHubState extends State<SelectHub> {
   }
 
   void getNewSearchData() {
-    try {
-      getBLEDevices().listen((event) {
-        print("$event");
-        bool contains = false;
-        for (BLEDevice d in BLEDeviceList) {
-          if (d.name == event.name) {
-            contains = true;
-          }
+    getBLEDevices().listen((event) {
+      print("$event");
+      bool contains = false;
+      for (BLEDevice d in BLEDeviceList) {
+        if (d.name == event.name) {
+          contains = true;
         }
-        if (!contains) {
-          setState(() {
-            developer.log("${BLEDeviceList.length}", name: 'my.app.category');
-            BLEDeviceList.add(event);
-          });
-        }
-      });
-    } catch (e) {
-      print("e: $e");
-    }
+      }
+      if (!contains) {
+        setState(() {
+          BLEDeviceList.add(event);
+        });
+      }
+    });
   }
 }
 
@@ -111,18 +116,23 @@ class BLEDevice {
   String name;
   int RSSI;
   Uint8List device;
+  String id;
   BLEDevice({
     required this.name,
     required this.RSSI,
     required this.device,
+    required this.id,
   });
   @override
   bool operator ==(Object other) {
-    return other is BLEDevice && other.name == name && other.device == device;
+    return other is BLEDevice &&
+        other.name == name &&
+        other.device == device &&
+        other.id == id;
   }
 
   @override
-  int get hashCode => Object.hashAll([name, device]);
+  int get hashCode => Object.hashAll([name, device, id]);
 }
 
 class BLEDeviceDisplay extends StatelessWidget {
